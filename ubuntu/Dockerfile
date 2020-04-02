@@ -78,6 +78,7 @@ WORKDIR $HOME
 ARG PYTHON_VERSION=default
 
 
+# ToDo Versionの調整と、不要な設定の除去
 # ref https://hub.docker.com/r/jupyter/base-notebook/dockerfile
 ENV MINICONDA_VERSION=4.8.2 \
     MINICONDA_MD5=87e77f097f6ebb5127c77662dfc3165e \
