@@ -16,21 +16,22 @@ RUN apt-get update && \
     bzip2 \
     ca-certificates \
     sudo \
-    locales \
-    tk-dev \
     unzip \
+    fontconfig \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 # ToDo 要らないものを削ぎ落とす
+#    locales \
+#    tk-dev \
 
 # SPARK    
 # https://qiita.com/hrkt/items/fe9b1162f7a08a07e812
-#ARG SPARK_VERSION=2.4.5
-#ARG HADOOP_VERSION=2.7
-#RUN curl -O http://apache.mirror.iphh.net/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz \
-#    && tar xzf spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz \
-#    && mv spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION} /usr/local/spark \
-#    && rm spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz
+ARG SPARK_VERSION=2.4.5
+ARG HADOOP_VERSION=2.7
+RUN curl -O http://apache.mirror.iphh.net/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz \
+    && tar xzf spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz \
+    && mv spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION} /usr/local/spark \
+    && rm spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz
 # ToDo もう少し早くDownload出来るミラーが無いか確認する
 
 
@@ -127,12 +128,42 @@ RUN conda install -c conda-forge --quiet --yes \
 
 
 
-# JAVA_HOME
-#ENV JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
+# JAVA_HOME & SPARK
+ENV SPARK_HOME=/usr/local/spark
+ARG PY4J_VER=0.10.7
+
+ENV PATH=$SPARK_HOME/bin:$PATH \
+    PYTHONPATH=${SPARK_HOME}/python:${SPARK_HOME}/python/lib/py4j-${PY4J_VER}-src.zip \
+    SPARK_OPTS="--driver-java-options=-Xms1024M --driver-java-options=-Xmx4096M --driver-java-options=-Dlog4j.logLevel=info" \
+    PATH=${SPARK_HOME}/bin:$PATH \
+    PYSPARK_PYTHON=${CONDA_DIR}/bin/python \
+    PYSPARK_DRIVER=${CONDA_DIR}/bin/python
+
+# add jar
+RUN ${SPARK_HOME}/bin/pyspark --packages graphframes:graphframes:0.7.0-spark2.4-s_2.11
+RUN ${SPARK_HOME}/bin/pyspark --packages org.postgresql:postgresql:jar:42.1.4
+
+
+
+# FONT
+RUN mkdir ~/.fonts \
+    && chown ${USER_NAME} ~/.fonts \
+    && chmod 755 ~/.fonts
+RUN wget https://ipafont.ipa.go.jp/IPAexfont/ipaexg00401.zip \
+    && unzip ipaexg00401.zip \
+    && mv ipaexg00401 -t ~/.fonts/ \
+    && rm ipaexg00401.zip \
+    && rm -rf ~/.cache/* \
+    && fc-cache -fv
+
+
+#RUN jupyter labextension install @jupyter-widgets/jupyterlab-manager
+#RUN jupyter labextension install jupyter-matplotlib
+#RUN jupyter labextension install @lckr/jupyterlab_variableinspector
 
 # ISSUE defaultで$CONDA_DIRのPATHが通っていない(ubuntuでは同じ書き方で通っている)    
 RUN echo "export CONDA_DIR=/opt/conda \n" >> /home/${USER_NAME}/.bashrc && \
-    echo "export PATH=\$CONDA_DIR/bin:\$JAVA_HOME/bin:\$PATH" >> /home/${USER_NAME}/.bashrc
+    echo "export PATH=\$SPARK_HOME/bin:\$CONDA_DIR/bin:\$JAVA_HOME/bin:\$PATH" >> /home/${USER_NAME}/.bashrc
 
 EXPOSE 8888    
 

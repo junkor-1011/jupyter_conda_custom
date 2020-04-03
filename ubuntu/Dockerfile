@@ -11,36 +11,39 @@ USER root
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    build-essential \
     openjdk-8-jre-headless \
     wget \
     curl \
     bzip2 \
     ca-certificates \
     sudo \
-    locales \
-    fonts-liberation \
-    run-one \
-    xz-utils \
     graphviz \
     git \
     make \
-    llvm \
     tk-dev \
     unzip \
-    swig \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 # ToDo 要らないものを削ぎ落とす
+#    build-essential \
+#    locales \
+#    fonts-liberation \
+#    run-one \
+#    xz-utils \
+#    swig \
+#    llvm \
 
 # SPARK    
 # https://qiita.com/hrkt/items/fe9b1162f7a08a07e812
-#ARG SPARK_VERSION=2.4.5
-#ARG HADOOP_VERSION=2.7
-#RUN curl -O http://apache.mirror.iphh.net/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz \
-#    && tar xzf spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz \
-#    && mv spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION} /usr/local/spark \
-#    && rm spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz
+# https://spark.apache.org/downloads.html
+# https://www.apache.org/dyn/closer.lua/spark/spark-2.4.5/spark-2.4.5-bin-hadoop2.7.tgz
+ARG SPARK_VERSION=2.4.5
+ARG HADOOP_VERSION=2.7
+#RUN curl -O https://spark.apache.org/downloads.html/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz \
+RUN curl -O http://apache.mirror.iphh.net/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz \
+    && tar xzf spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz \
+    && mv spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION} /usr/local/spark \
+    && rm spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz
 # ToDo もう少し早くDownload出来るミラーが無いか確認する
 
 
@@ -122,10 +125,41 @@ RUN conda install --quiet --yes \
 
 
 
-# JAVA_HOME
-ENV JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
+# JAVA_HOME & SPARK
+ENV JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64 \
+    SPARK_HOME=/usr/local/spark
+ARG PY4J_VER=0.10.7
 
-EXPOSE 8888    
+ENV PATH=$SPARK_HOME/bin:$PATH \
+    PYTHONPATH=${SPARK_HOME}/python:${SPARK_HOME}/python/lib/py4j-${PY4J_VER}-src.zip \
+    SPARK_OPTS="--driver-java-options=-Xms1024M --driver-java-options=-Xmx4096M --driver-java-options=-Dlog4j.logLevel=info" \
+    PATH=${SPARK_HOME}/bin:$PATH \
+    PYSPARK_PYTHON=${CONDA_DIR}/bin/python \
+    PYSPARK_DRIVER=${CONDA_DIR}/bin/python
+
+# add jar
+RUN ${SPARK_HOME}/bin/pyspark --packages graphframes:graphframes:0.7.0-spark2.4-s_2.11
+RUN ${SPARK_HOME}/bin/pyspark --packages org.postgresql:postgresql:jar:42.1.4
+
+
+
+# FONT
+RUN mkdir ~/.fonts \
+    && chown ${USER_NAME} ~/.fonts \
+    && chmod 755 ~/.fonts
+RUN wget https://ipafont.ipa.go.jp/IPAexfont/ipaexg00401.zip \
+    && unzip ipaexg00401.zip \
+    && mv ipaexg00401 -t ~/.fonts/ \
+    && rm ipaexg00401.zip \
+    && rm -rf ~/.cache/* \
+    && fc-cache -fv
+
+
+#RUN jupyter labextension install @jupyter-widgets/jupyterlab-manager
+#RUN jupyter labextension install jupyter-matplotlib
+#RUN jupyter labextension install @lckr/jupyterlab_variableinspector
+
+EXPOSE 8888
 
 ENTRYPOINT ["tini", "-g", "--"]
 CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--NotebookApp.token=''"]
