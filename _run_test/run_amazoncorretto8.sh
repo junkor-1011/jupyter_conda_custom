@@ -41,6 +41,7 @@ done
 docker run \
         --name jupyter_conda_custom_amazoncorretto8_${PORT_USING} \
         -d \
+        --restart=unless-stopped \
         -p ${PORT_USING}:8888 \
         -p 4050:4040 \
         -v $PWD/.jupyter:/home/${USER_NAME}/.jupyter \
@@ -52,4 +53,6 @@ docker run \
         jupyter lab --ip=0.0.0.0 --NotebookApp.password='sha1:b735ed4a0d00:75a18f79e312559cd0a266bac3974efb0382775a'  --NotebookApp.keyfile=/etc/ssl/notebook/notebook.key    --NotebookApp.certfile=/etc/ssl/notebook/notebook.crt
 
 
+#        -d \
+#        --rm \
 #       -v $PWD/bashrc:/home/jovyan/.bashrc \
