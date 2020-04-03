@@ -131,6 +131,8 @@ RUN conda install -c conda-forge --quiet --yes \
 #ENV JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
 
 # ISSUE defaultで$CONDA_DIRのPATHが通っていない(ubuntuでは同じ書き方で通っている)    
+RUN echo "export CONDA_DIR=/opt/conda \n" >> /home/${USER_NAME}/.bashrc && \
+    echo "export PATH=\$CONDA_DIR/bin:\$JAVA_HOME/bin:\$PATH" >> /home/${USER_NAME}/.bashrc
 
 EXPOSE 8888    
 
