@@ -48,8 +48,8 @@ docker run \
         -v $PWD/notebook-ssl:/etc/ssl/notebook \
         -v $PWD/spark-defaults.conf:/usr/local/spark/conf/spark-defaults.conf \
         -v $PWD/matplotlibrc:/opt/conda/lib/python3.7/site-packages/matplotlib/mpl-data/matplotlibrc \
-        jupyter_conda_custom_amazoncorretto8 #\
-#        jupyter lab --NotebookApp.password='sha1:b735ed4a0d00:75a18f79e312559cd0a266bac3974efb0382775a'  --NotebookApp.keyfile=/etc/ssl/notebook/notebook.key    --NotebookApp.certfile=/etc/ssl/notebook/notebook.crt
+        jupyter_conda_custom_amazoncorretto8 \
+        jupyter lab --ip=0.0.0.0 --NotebookApp.password='sha1:b735ed4a0d00:75a18f79e312559cd0a266bac3974efb0382775a'  --NotebookApp.keyfile=/etc/ssl/notebook/notebook.key    --NotebookApp.certfile=/etc/ssl/notebook/notebook.crt
 
 
 #       -v $PWD/bashrc:/home/jovyan/.bashrc \
